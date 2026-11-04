@@ -1,0 +1,10 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "agent-qa",
+  "displayName": "Agent QA",
+  "version": "0.1.0",
+  "description": "Evidence-first exploratory QA, reproduction and local reports using your current model.",
+  "author": {"name": "msandroid"},
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": ["Explore this app for quality issues and preserve reproducible evidence."]
+}

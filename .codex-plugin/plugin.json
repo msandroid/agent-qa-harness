@@ -1,0 +1,19 @@
+{
+  "name": "agent-qa",
+  "version": "0.1.0",
+  "description": "Explore apps and games, preserve evidence, reproduce findings and export QA reports.",
+  "author": {"name": "msandroid"},
+  "repository": "https://github.com/msandroid/agent-qa-harness",
+  "license": "MIT",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Agent QA",
+    "shortDescription": "Explore, reproduce and report quality issues",
+    "longDescription": "Local-first QA evidence management and an optional browser adapter. Uses the coding client's model and existing app/game tools; no separate model key required. Install the agent-qa CLI before enabling MCP. External observations are explicitly operator-attested.",
+    "developerName": "msandroid",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": ["Explore this app for quality issues and produce an evidence-backed report."]
+  }
+}

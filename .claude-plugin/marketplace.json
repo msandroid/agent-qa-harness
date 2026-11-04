@@ -1,0 +1,6 @@
+{
+  "name": "agent-qa-marketplace",
+  "owner": {"name": "msandroid"},
+  "metadata": {"description": "Evidence-first QA workflows for coding agents"},
+  "plugins": [{"name": "agent-qa", "source": "./", "description": "Evidence-first agent QA harness"}]
+}

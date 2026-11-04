@@ -1,0 +1,16 @@
+{
+  "contract": {
+    "title": "Profile save/load QA",
+    "target_kind": "web",
+    "build_id": "replace-with-the-target-build-hash",
+    "scope": "Save profile changes, reload, and verify persisted values in a test account.",
+    "criteria": [
+      {"id": "save", "description": "Saved profile values survive a reload."},
+      {"id": "cancel", "description": "Cancelling an edit does not change saved values."}
+    ],
+    "allowed_origins": ["http://127.0.0.1:3000"],
+    "max_steps": 60,
+    "max_seconds": 1200,
+    "max_reported_cost_usd": 5
+  }
+}
