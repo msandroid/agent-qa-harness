@@ -18,6 +18,13 @@ async def test_real_stdio_handshake_tools_resource_and_workflow(tmp_path):
         async with ClientSession(reader, writer) as client:
             await client.initialize()
             tools = await client.list_tools()
+            by_name = {t.name: t for t in tools.tools}
+            for name in ("qa_list_jobs", "qa_get_job", "qa_get_events"):
+                assert by_name[name].annotations.readOnlyHint is True
+            assert (
+                by_name["qa_create_job"].annotations is None
+                or not by_name["qa_create_job"].annotations.readOnlyHint
+            )
             assert {"qa_create_job", "qa_browser_action", "qa_record_reproduction"} <= {
                 t.name for t in tools.tools
             }

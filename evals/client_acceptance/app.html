@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Harbor Profile — QA sandbox</title>
+<style>
+body{font:18px system-ui;max-width:760px;margin:40px auto;padding:20px;background:#f4f7fb;color:#123}
+section{background:white;padding:24px;border:1px solid #bbc;border-radius:12px;margin:20px 0}
+label,input,button{display:block;margin:12px 0}input,button{font:inherit;padding:10px}button{cursor:pointer}
+</style>
+<h1>Harbor Profile</h1>
+<p>Manage your public display name. Save changes when you are ready, or cancel to discard edits.</p>
+<section>
+<h2>Your profile</h2>
+<p>Current display name: <strong id="current">Harbor Guest</strong></p>
+<label for="display-name">Display name</label>
+<input id="display-name" aria-label="Display name" value="Harbor Guest" maxlength="80">
+<button id="save-profile" type="button">Save profile</button>
+<button id="cancel-edit" type="button">Cancel edits</button>
+<p id="status" role="status">Ready</p>
+</section>
+<section><h2>Help</h2><p>Saved profile changes should remain after reloading this page. Cancelling should restore the current saved name.</p></section>
+<script>
+let saved = 'Harbor Guest';
+const nameInput = document.querySelector('#display-name');
+const current = document.querySelector('#current');
+const status = document.querySelector('#status');
+document.querySelector('#save-profile').onclick = () => {
+  saved = nameInput.value;
+  current.textContent = saved;
+  status.textContent = 'Profile saved successfully';
+};
+document.querySelector('#cancel-edit').onclick = () => {
+  nameInput.value = saved;
+  status.textContent = 'Changes discarded';
+};
+</script>
+</html>

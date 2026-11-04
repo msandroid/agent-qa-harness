@@ -26,6 +26,8 @@ Native client validation and local acceptance results are recorded in the releas
 - Codex and Cursor configs/manifests are included and packaging/config parsing is tested. Native client installation and model-driven QA sessions in those clients were not executed during this acceptance run.
 - No paid-model API calls were made. A deterministic browser scenario validates the runtime; it is not a measurement of autonomous bug-finding ability.
 
+Subsequently, real authenticated client/model runs were performed. Codex, Claude Code and Cursor completed the full installed-plugin QA flow; Antigravity installation succeeded but its interactive permission/setup boundary remains unresolved. See [the detailed acceptance record](client-acceptance-2026-11-04.md). The earlier no-model statement applies only to the deterministic unit/integration suite above.
+
 ## Remote CI limitation
 
 The first GitHub Actions run was blocked before any test step executed. GitHub reported: "The job was not started because your account is locked due to a billing issue." This is not a test failure observed in the code; remote Windows/Linux acceptance remains unverified until the account issue is resolved. [Initial run](https://github.com/msandroid/agent-qa-harness/actions/runs/41796297785).

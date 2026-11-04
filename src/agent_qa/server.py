@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from .browser import BrowserDriver
 from .models import BrowserAction, Checkpoint, Contract, FindingInput, Outcome
@@ -39,19 +40,31 @@ def create_server(data_dir: str | Path, workspace_root: str | Path):
         """Fix build, criteria, scope, exact browser origins and budgets for this workspace."""
         return store.create(contract, str(workspace))
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
+        )
+    )
     def qa_list_jobs() -> list[dict]:
         """List jobs in this local data directory, including resumable jobs."""
         return store.list_jobs()
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
+        )
+    )
     def qa_get_job(job_id: str) -> dict:
         """Read contract, checkpoint, runs, evidence and findings. Events are paginated separately."""
         result = store.get(job_id)
         result.pop("events")
         return result
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
+        )
+    )
     def qa_get_events(job_id: str, after_seq: int = 0, limit: int = 50) -> list[dict]:
         """Read bounded action history after a cursor; max 100 events per call."""
         import json

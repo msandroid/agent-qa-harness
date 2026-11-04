@@ -18,7 +18,7 @@ Evidence-first QA for **Codex, Claude Code, Google Antigravity and Cursor**. Bri
 - Optional Playwright browser: isolated context, origin-restricted HTTP requests, screenshots, visible text and bounded console/error logs.
 - External-tool workflow for games, mobile, desktop, API and code tests: use the host's existing tools and import their evidence, explicitly labeled as operator-attested/imported.
 
-This is a **local QA workflow plugin**, not a hosted multi-tenant testing fleet, an engine controller, a real-time gameplay policy or a certification of defect absence. Client manifests are included; see validation status before assuming every client has been tested end to end.
+This is a **local QA workflow plugin**, not a hosted multi-tenant testing fleet, an engine controller, a real-time gameplay policy or a certification of defect absence. Actual installed Codex, Claude Code and Cursor model sessions completed the full QA flow; Antigravity installation/tool discovery passed but its interactive approval/setup remains incomplete. See the [acceptance record](docs/client-acceptance-2026-11-04.md).
 
 ## Install the runtime
 

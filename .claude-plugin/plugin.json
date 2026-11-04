@@ -1,6 +1,6 @@
 {
   "name": "agent-qa",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Evidence-first exploratory QA, reproduction and reporting using your existing model.",
   "author": {"name": "msandroid"},
   "repository": "https://github.com/msandroid/agent-qa-harness",

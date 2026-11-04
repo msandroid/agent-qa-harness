@@ -1,6 +1,6 @@
 {
   "name": "agent-qa",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Explore apps and games, preserve evidence, reproduce findings and export QA reports.",
   "author": {"name": "msandroid"},
   "repository": "https://github.com/msandroid/agent-qa-harness",

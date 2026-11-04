@@ -36,10 +36,14 @@ The packager creates one directory per client. This avoids making another client
 
 - **Claude Code**: the repository includes a marketplace manifest. Add the repository as a marketplace and install `agent-qa@agent-qa-marketplace` through Claude's plugin manager. For local testing, use `claude --plugin-dir /absolute/path/to/dist/plugins/claude`. Validate the plugin with `claude plugin validate /absolute/path/to/dist/plugins/claude`.
 - **Codex**: the `dist/plugins/codex` bundle has `.codex-plugin/plugin.json`, `.mcp.json` and Skills. Use a local/plugin source mechanism supported by your installed Codex surface; the explicit MCP+Skills setup remains available. This repository is not automatically an approved marketplace listing.
+- Codex CLI also supports the repository marketplace: `codex plugin marketplace add msandroid/agent-qa-harness`, then `codex plugin add agent-qa@agent-qa-marketplace`. For local development, add this checkout's path instead of the GitHub slug.
 - **Cursor**: the `dist/plugins/cursor` bundle has `.cursor-plugin/plugin.json`, `mcp.json` and Skills. Load it through the local plugin mechanism supported by your installed version, or use the explicit MCP+Skills setup. Marketplace publication is a separate review.
+- For Cursor local development, copy that bundle into `~/.cursor/plugins/local/agent-qa` and reload the client. The CLI also discovers this installed plugin. `--approve-mcps` approves server startup, not every tool call: for headless evaluation, configure exact QA-tool permissions in the disposable workspace's `.cursor/cli.json`, including both `permissions.allow` and `permissions.deny` arrays. Keep unrelated tools under the existing policy.
 - **Antigravity**: load `dist/plugins/antigravity` as a local plugin, or place it under the workspace `.agents/plugins/agent-qa/` if supported by your IDE surface. It contains `.antigravity-plugin/plugin.json`, `mcp_config.json` and Skills. Validate with `agy plugin validate --strict /absolute/path/to/dist/plugins/antigravity`.
 
 Client APIs and plugin discovery can change. Included manifests and schema validation are not proof that every model/client combination autonomously completes QA. See [validation status](validation.md).
+
+Actual installed-client runs and the permissions/setup issues they exposed are documented in [the acceptance record](client-acceptance-2026-11-04.md).
 
 ## Sources for packaging
 
