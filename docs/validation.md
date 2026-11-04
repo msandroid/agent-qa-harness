@@ -19,8 +19,13 @@ Native client validation and local acceptance results are recorded in the releas
 
 - Windows, Python 3.14.6, MCP Python SDK 1.30.0, Playwright 1.64.1.
 - `pytest -q`: **20 passed**, including real Chromium and a separate MCP stdio process.
+- The same **20 tests passed on Windows/Python 3.11 and 3.13** in separate isolated environments.
 - Ruff lint and format checks passed.
 - `claude plugin validate dist/plugins/claude`: passed.
 - `agy plugin validate --strict dist/plugins/antigravity`: passed, with the installed CLI placed on the validator's PATH.
 - Codex and Cursor configs/manifests are included and packaging/config parsing is tested. Native client installation and model-driven QA sessions in those clients were not executed during this acceptance run.
 - No paid-model API calls were made. A deterministic browser scenario validates the runtime; it is not a measurement of autonomous bug-finding ability.
+
+## Remote CI limitation
+
+The first GitHub Actions run was blocked before any test step executed. GitHub reported: "The job was not started because your account is locked due to a billing issue." This is not a test failure observed in the code; remote Windows/Linux acceptance remains unverified until the account issue is resolved. [Initial run](https://github.com/msandroid/agent-qa-harness/actions/runs/41796297785).
