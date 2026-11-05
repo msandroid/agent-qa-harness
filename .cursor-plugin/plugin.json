@@ -1,6 +1,6 @@
 {
   "name": "agent-qa",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Evidence-first exploratory QA and adversarial review for apps, games and software.",
   "author": {"name": "msandroid"},
   "repository": "https://github.com/msandroid/agent-qa-harness",

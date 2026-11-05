@@ -1,0 +1,8 @@
+{
+  "runtime": "Rust release",
+  "tools": 18,
+  "working_set_mib": 9.06,
+  "private_mib": 2.54,
+  "peak_working_set_mib": 9.06,
+  "executable_bytes": 7595520
+}

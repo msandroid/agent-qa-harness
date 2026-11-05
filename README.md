@@ -1,112 +1,94 @@
 # Agent QA Harness
 
-Evidence-first QA for **Codex, Claude Code, Google Antigravity and Cursor**. Bring the frontier model and application tools you already use. This plugin provides an MCP server and four portable Skills for exploratory testing, adversarial review, reproduction and resumable reporting.
+Evidence-first QA for **Codex, Claude Code, Antigravity and Cursor**, implemented in **Rust + Cargo**. Use your coding client's frontier model and existing application/game tools. The native stdio MCP server provides 18 tools and four portable Skills for exploration, adversarial review, reproduction and reporting. No separate model API key is required.
 
-**No separate model API key, proxy or hosted model service.** The host agent makes decisions. This local runtime stores contracts and evidence, enforces its own action budgets, and optionally drives Chromium.
+[日本語](README.ja.md) · [Client setup](docs/clients.md) · [Architecture](docs/architecture.md) · [Rust validation](docs/validation.md)
 
-[日本語](README.ja.md) · [Client setup](docs/clients.md) · [Architecture and trust boundaries](docs/architecture.md) · [Validation](docs/validation.md)
+## Install
 
-## What works in v0.1
-
-- Stdio MCP: 18 tools, a workflow resource and an exploration prompt.
-- Immutable job contracts: target build, criteria, scope, exact Web origins and budgets.
-- SQLite ledger: action receipts, checkpoints, pause/resume, interrupted-action reconciliation.
-- Evidence copies with SHA-256 integrity checks and job/run ownership checks.
-- Findings start as candidates; separate reproduction runs produce confirmed/intermittent/not-reproduced states.
-- Criteria cannot pass without evidence or while a reproduced defect remains on the same build.
-- JSON/Markdown reports include evidence manifest, reproduction counts and coverage gaps.
-- Optional Playwright browser: isolated context, origin-restricted HTTP requests, screenshots, visible text and bounded console/error logs.
-- External-tool workflow for games, mobile, desktop, API and code tests: use the host's existing tools and import their evidence, explicitly labeled as operator-attested/imported.
-
-This is a **local QA workflow plugin**, not a hosted multi-tenant testing fleet, an engine controller, a real-time gameplay policy or a certification of defect absence. Actual installed Codex, Claude Code and Cursor model sessions completed the full QA flow; Antigravity installation/tool discovery passed but its interactive approval/setup remains incomplete. See the [acceptance record](docs/client-acceptance-2026-11-04.md).
-
-## Install the runtime
-
-Python 3.11+ and [uv](https://docs.astral.sh/uv/) are required for these commands. Run them in a terminal with the same user account as your coding client.
+Build with Rust/Cargo (Rust 1.88 minimum declared; tested with 1.97.1):
 
 ```sh
-git clone https://github.com/msandroid/agent-qa-harness.git
-cd agent-qa-harness
-uv sync --locked --extra browser --extra dev
-uv run playwright install chromium
+cargo install --git https://github.com/msandroid/agent-qa-harness --tag v0.2.0 --locked
 ```
 
-For native plugin manifests, install the CLI on your user's PATH:
+Or build this checkout:
 
 ```sh
-uv tool install --from ".[browser]" agent-qa-harness
+cargo build --release --locked
+cargo install --path . --locked
 agent-qa --version
 ```
 
-Restart the client if it has not picked up the updated PATH. The alternative below launches the project environment by absolute Python path and does not need a global CLI installation.
+The runtime needs neither Python nor Node. The optional browser driver needs an installed Chrome/Chromium executable; set `QA_CHROME` to its absolute path if autodetection fails. Browser memory is additional to the harness process.
 
-## Connect a client explicitly
-
-Generate a config snippet for an existing **test workspace**, not your plugin checkout:
+Generate an explicit configuration for a test workspace:
 
 ```sh
-uv run agent-qa config --client codex --workspace /absolute/path/to/test-workspace
-uv run agent-qa config --client claude --workspace /absolute/path/to/test-workspace
-uv run agent-qa config --client cursor --workspace /absolute/path/to/test-workspace
-uv run agent-qa config --client antigravity --workspace /absolute/path/to/test-workspace
+agent-qa config --client codex --workspace /absolute/test/workspace
+agent-qa config --client claude --workspace /absolute/test/workspace
+agent-qa config --client cursor --workspace /absolute/test/workspace
+agent-qa config --client antigravity --workspace /absolute/test/workspace
 ```
 
-On Windows, use a quoted path such as `"C:\Projects\MyApp"`. Merge the printed entry into the client's MCP settings. The command **prints only**; it does not overwrite settings. The generated absolute Python path is specific to this installation and must be regenerated if the environment moves.
+On Windows use a quoted path, for example `"C:\Projects\MyApp"`. Merge the printed server entry into your client's MCP settings. It uses this executable's absolute path and only prints configuration. Native plugin manifests use `agent-qa serve` on PATH. See [client instructions](docs/clients.md) for Skills and plugin bundles.
 
-Add the relevant `skills/<name>` folders through the client's plugin support, or copy them into that client's workspace Skills directory. See [exact client instructions](docs/clients.md), including native plugin bundles.
+## Bounded memory and parallel execution
 
-## Use it
+```sh
+agent-qa serve --workspace /absolute/test/workspace --max-concurrency 4 --max-browsers 2
+```
 
-Ask your agent:
+- Tokio runs two async worker threads. Blocking ledger/file operations use a bounded blocking pool.
+- At most four tool operations run by default; excess requests receive a busy error. Different jobs can progress concurrently; operations on the same job serialize.
+- One shared Chromium process hosts at most two isolated job contexts by default. Browser processes have their own memory use; target pages can consume substantial memory.
+- Artifact copies and SHA-256 checks use 64 KiB chunks, with a 25 MiB artifact limit. JSON/Markdown exports stream SQLite rows instead of loading an entire ledger.
+- SQLite connections have a 512 KiB cache setting. Job snapshots cap child records at 500 per table and disclose truncation. Events are paginated at 100. Browser logs retain at most 200 entries; observations retain bounded text/controls.
 
-> Use qa-explore to inspect this application's save/load flow on build abc123. Spend at most 60 recorded operations and 20 minutes. Preserve evidence, reproduce findings after reset, and report untested areas. Do not modify the application.
+These are operation/data limits, not an OS-enforced process memory quota or a sandbox for hostile content.
 
-The expected sequence is:
+## QA workflow
 
-1. `qa_create_job`: build, scope, criteria, origins, budgets.
-2. Reset target with available tools; `qa_begin_run` records what was reset.
-3. Browser adapter or existing app/game tools; record external operations with `qa_record_step`.
-4. `qa_attach_artifact`, `qa_add_finding`, `qa_checkpoint`.
-5. New reset and reproduction run; `qa_record_reproduction` with fresh evidence.
-6. `qa_complete_job` with every criterion explicitly pass/fail/inconclusive/not_tested.
-7. `qa_export_report`; close the owned browser.
+Ask your agent to use `qa-explore` on a specific build, with explicit criteria, scope, allowed origins and a budget. Then:
 
-The ledger defaults to `<workspace>/.qa-harness`. Override with `QA_DATA_DIR` or `serve --data-dir`. Set the workspace explicitly with the generated config; native plugin launchers inherit the client's working directory unless `QA_WORKSPACE` is set. **Confirm the workspace shown in the created job before importing files.**
+1. `qa_create_job` fixes the contract; reset the target and `qa_begin_run`.
+2. Explore through the browser adapter or existing tools; record external steps and import evidence.
+3. `qa_add_finding` records candidates. Checkpoint hypotheses and untested areas.
+4. Reset again, begin a separate reproduction run, and record fresh evidence with `qa_record_reproduction`.
+5. `qa_complete_job` records every criterion as pass/fail/inconclusive/not_tested; `qa_export_report` writes JSON and Markdown.
+6. Close owned browser contexts. Reconcile unknown actions before retrying or completing.
 
-## Skills
+Ledger and evidence default to `<workspace>/.qa-harness`, override with `QA_DATA_DIR` or `--data-dir`. Artifact hashes and job/run ownership are checked. A completed harness job can correctly report a failed product criterion; it is not proof of defect absence. Imported observations and resets remain operator-attested.
 
 | Skill | Purpose |
 |---|---|
-| `qa-explore` | Risk-guided exploration and evidence capture |
-| `qa-reproduce` | Fresh-run reproduction with separate evidence |
-| `qa-adversarial-review` | Executable counterexamples to product guarantees |
-| `qa-resume-report` | Restore context, reconcile unknown operations, report gaps |
+| `qa-explore` | Risk-guided exploration |
+| `qa-reproduce` | Fresh-run reproduction |
+| `qa-adversarial-review` | Executable counterexamples |
+| `qa-resume-report` | Resume, reconcile and report gaps |
 
-Skills use your current model and available tools. They do not silently enable background agents, auto-approve commands, add credentials or publish results.
+## Browser capabilities
 
-## Test and package
+Native Chrome DevTools Protocol supports navigation, observation, click, fill, press and viewport screenshots. Selectors support CSS, `text=...`, and simple `:has-text('...')`; this is not full Playwright selector compatibility. Keys support common editing/navigation keys, ASCII and modifiers. The driver restricts routed HTTP(S) requests to exact contract origins, blocks WebSockets, bypasses service workers and denies downloads. It exposes no arbitrary JavaScript tool. Request interception is not a network security boundary; use OS/network isolation for untrusted targets.
+
+Games, desktop and mobile use the host's existing tools and imported evidence. Hosted tenant isolation, device farms and customer billing are extension points, not shipped services.
+
+## Validate and package
 
 ```sh
-uv run pytest -q
-uv run ruff check src tests scripts
-uv run ruff format --check src tests scripts
-uv run python scripts/package_plugins.py
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo test --locked --test browser -- --ignored --nocapture
+cargo run --locked -- package
 ```
 
-Browser integration tests need Chromium. The suite uses a local deliberately broken save-flow fixture; it performs real UI input, observes the failure after reload, repeats it in a fresh browser, and verifies the report. It does not invoke a paid model.
+The ignored browser test requires Chrome. It drives an intentionally broken local save flow, verifies isolated parallel jobs and independent reproduction, and exports a failed QA report. No paid model is invoked. The packager writes four client directories under `dist/plugins`; runtime installation is separate.
 
-`dist/plugins/{codex,claude,cursor,antigravity}` contains client-specific bundles. Runtime installation is still required. Publishing this repository does not automatically list it in any client's marketplace.
+## Migration and acceptance status
 
-## Important boundaries
+v0.2.0 replaces the Python runtime with Rust while retaining the 18 tool names/input schemas and SQLite tables. Existing ledgers remain readable; back up the whole data directory before switching runtimes. [Migration evidence and rollback](docs/validation.md).
 
-- The ledger survives restarts; browser/game/device processes and target state do not. Reconcile unknown actions instead of replaying them blindly.
-- External reset descriptions, imported artifacts and external observations are attestations. A separate run is an organizational boundary, not independent proof that the target was reset.
-- Budgets apply to harness operations. The host can use other tools directly, so Skills must record/check those operations; this server cannot police the whole IDE. Reported cost is not automatic subscription billing.
-- Browser origins are exact and intentionally restrictive; required CDNs must be listed. WebSockets and popups are blocked in this minimal driver. This driver is not an OS/network sandbox: use an isolated VM/container/network for untrusted builds or hostile sites.
-- Artifacts and reports can contain screenshots, personal data, target text and logs. There is no automatic image/log redaction. Inspect before import/export or sharing. Fill values are omitted from action metadata, but may appear in screenshots or application logs.
-- Same-user local storage is not authenticated tenant isolation or tamper-proof audit storage. Use separate processes/data directories and operating-system isolation for different trust domains.
-- Game internal APIs, editor/headless tests and rendered player-input tests establish different things. Use existing engine/native tools and report those distinctions.
+The [2026-11-04 client acceptance](docs/client-acceptance-2026-11-04.md) documents the previous Python runtime: Codex, Claude and Cursor completed real-model QA, while Antigravity remained incomplete. Those results do not establish four-client model acceptance of this Rust rewrite. Rust stdio protocol, ledger migration and real browser integration are validated separately.
 
-## License
-
-MIT. No telemetry or cloud account is built into this package. Dependency downloads and the optional browser installation require network access; the optional browser connects to the configured target origins.
+MIT license. Publishing the repository does not automatically list it in client marketplaces.

@@ -1,53 +1,54 @@
-# Agent QA Harness
+# Agent QA Harness — Rust / Cargo
 
-Codex・Claude Code・Google Antigravity・Cursorで利用中のフロンティアモデルを使い、アプリ・ゲーム・ソフトウェアの品質検査を進めるプラグインです。追加のモデルAPIキーは不要です。
-
-MCPサーバーが検査契約、操作記録、チェックポイント、証拠、再現結果、レポートを管理します。モデルは既存クライアント側で探索方針を判断します。
-
-## 実装した機能
-
-- MCPツール18個、ワークフローResource、探索Prompt。
-- ビルドと検査条件を固定したジョブ、操作数・経過時間・申告費用の上限。
-- SQLiteによる保存、途中再開、結果不明の操作の記録。
-- 証拠ファイルのコピーとSHA-256照合、別ジョブ・別実行の証拠の混用防止。
-- 不具合候補と、別実行による再現確認の区別。
-- 検査項目ごとの合格・不合格・判定不能・未検査、JSON/Markdown出力。
-- PlaywrightによるWebの直接操作と画面・ログ収集。
-- ゲーム・モバイル・デスクトップでは既存MCP/操作ツールを使い、操作結果と証拠を取り込む連携。
-
-エンジン専用コントローラーやマルチテナントのクラウド端末群は含みません。外部ツールで行った操作・リセットは「操作者の申告」として記録し、ハーネスが独立検証したと扱いません。
+Codex、Claude Code、Antigravity、Cursorで利用する探索的QAハーネスです。v0.2.0では実行コードをRustへ移行しました。利用中のフロンティアモデルが判断し、18個のMCPツールと4つのSkillsが探索・証拠保存・独立した再現確認・JSON/Markdownレポートを支えます。別のモデルAPIキーは不要です。
 
 ## 導入
 
 ```sh
-git clone https://github.com/msandroid/agent-qa-harness.git
-cd agent-qa-harness
-uv sync --locked --extra browser --extra dev
-uv run playwright install chromium
+cargo install --git https://github.com/msandroid/agent-qa-harness --tag v0.2.0 --locked
 ```
 
-対象のテスト用作業フォルダーに合わせて設定を生成します。
+ソースから実行する場合:
 
 ```sh
-uv run agent-qa config --client codex --workspace "C:\Projects\MyApp"
+cargo build --release --locked
+cargo install --path . --locked
+agent-qa config --client codex --workspace "C:\Projects\MyApp"
 ```
 
-`--client`には`codex`、`claude`、`cursor`、`antigravity`を指定できます。設定は表示するだけで、既存設定を変更しません。Skillsとネイティブプラグインの導入は[クライアント別手順](docs/clients.md)を参照してください。
+`--client`は`codex`、`claude`、`cursor`、`antigravity`を指定できます。出力された設定を既存のMCP設定へ追加してください。設定生成はファイルを書き換えません。Python/Nodeは実行時に不要です。ブラウザ操作にはChrome/Chromiumが必要で、自動検出できない場合は環境変数`QA_CHROME`へ実行ファイルの絶対パスを指定します。
 
-## 依頼例
+## 省メモリと並列実行
 
-> qa-exploreを使い、このアプリの保存・復元を検査してください。対象はビルドabc123、上限60操作・20分です。不具合はリセット後に再現確認し、証拠付きで報告してください。未検査項目も明記し、アプリ自体は変更しないでください。
+```sh
+agent-qa serve --workspace "C:\Projects\MyApp" --max-concurrency 4 --max-browsers 2
+```
 
-ゲームの例：
+Tokioの非同期ワーカーは2スレッドです。ツール操作は既定で最大4件、ブラウザコンテキストは最大2件とし、上限を超える要求はbusyエラーで返します。異なるジョブは並列に進み、同じジョブの操作は直列化します。ブラウザは共有Chromiumプロセス内でジョブごとに分離します。
 
-> このゲームの配布ビルドについて、既存の操作ツールを使い、通常入力での移動・衝突・セーブ復元を検査してください。エディター内の検証と、描画された配布ビルドのプレイヤー入力の検証を分けて記録してください。
+証拠のコピーとSHA-256検査は64 KiBずつ処理し、証拠1件は25 MiBまでです。レポートはSQLiteから順次出力します。ジョブの一覧・詳細・ログにも件数上限を設け、切り捨てを明示します。Chromiumとページ自体のメモリは別途必要です。これらはOSによるメモリ上限ではありません。
 
-## 確認すべき範囲
+## 実行の流れ
 
-保存されるのは検査台帳と証拠です。アプリ、ブラウザ、端末、ゲーム内のメモリ状態は自動復元しません。プロセス再開後は対象の状態を観察し、不明な操作を照合してから続行します。
+1. 対象ビルド、合否基準、範囲、許可オリジン、予算を固定する。
+2. 対象をリセットして探索を開始し、操作と証拠を保存する。
+3. 不具合候補を記録し、新しい実行・証拠で再現確認する。
+4. 基準ごとのpass/fail/inconclusive/not_testedを記録してレポートを出力する。
 
-予算はハーネス経由の操作に適用され、IDEの他ツールを強制的に制限しません。費用は申告した金額で、クライアントのサブスクリプション料金を自動計測するものではありません。
+データは既定で対象ワークスペースの`.qa-harness`へ保存します。ゲーム・デスクトップ・モバイルではホストの既存ツールを使用し、証拠を取り込みます。ハーネスの処理成功と、検査対象の品質合格は別です。リセットや外部観測は操作者の申告として扱います。
 
-証拠に機密情報が含まれることがあります。自動の画像・ログ墨消しやクラウド公開は行いません。利用クライアントがどの情報をモデルへ送信するかは、そのクライアントの設定にも依存します。
+## 検証
 
-[英語README](README.md)、[構成と境界](docs/architecture.md)、[検証記録](docs/validation.md)。MITライセンス。
+```sh
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo test --locked --test browser -- --ignored --nocapture
+cargo run --locked -- package
+```
+
+ブラウザ試験では2ジョブの並列動作と分離、保存後の再読込で値が戻る不具合の発見、新しいコンテキストでの再現、レポート出力を確認します。実モデルの課金呼び出しは行いません。
+
+以前のPython版で行ったCodex・Claude・Cursorの実モデル検証と、今回のRust版の検証は区別しています。Antigravityの実モデル検証は未完了です。Rust版の全4クライアントでの実モデル検証済みとはしていません。
+
+詳細: [English README](README.md)、[クライアント設定](docs/clients.md)、[検証・移行](docs/validation.md)、[境界と設計](docs/architecture.md)。

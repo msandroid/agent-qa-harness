@@ -4,13 +4,13 @@ All four clients use the same local stdio MCP server and the same SKILL.md folde
 
 ## Reliable explicit setup
 
-Run `uv sync --locked --extra browser --extra dev` from the checkout, then:
+Run `cargo build --release --locked` from the checkout, then:
 
 ```sh
-uv run agent-qa config --client codex --workspace /absolute/test/workspace
+cargo run --locked -- config --client codex --workspace /absolute/test/workspace
 ```
 
-Change the client flag as needed. The generated snippet uses this environment's absolute Python executable and an explicit workspace. Merge only the named server entry; preserve existing settings. Never commit a real client's credentials or private workspace configuration to this public repository.
+Change the client flag as needed. The generated snippet uses this installation's absolute native executable and an explicit workspace. Merge only the named server entry; preserve existing settings. Never commit a real client's credentials or private workspace configuration to this public repository.
 
 | Client | MCP configuration | Workspace Skills fallback |
 |---|---|---|
@@ -21,15 +21,15 @@ Change the client flag as needed. The generated snippet uses this environment's 
 
 Copy each whole skill folder, including references. Do not copy it twice when native plugin discovery already loads it.
 
-After connecting, list tools and read `qa://workflow`. Create a small job and check its `workspace` path before importing artifacts. If the client cannot find Python/CLI, regenerate the explicit config instead of guessing PATH behavior.
+After connecting, list tools and read `qa://workflow`. Create a small job and check its `workspace` path before importing artifacts. If the client cannot find the native CLI, regenerate the explicit config instead of guessing PATH behavior.
 
 ## Native plugin bundles
 
 Install the runtime on PATH first:
 
 ```sh
-uv tool install --from ".[browser]" agent-qa-harness
-uv run python scripts/package_plugins.py
+cargo install --path . --locked
+cargo run --locked -- package
 ```
 
 The packager creates one directory per client. This avoids making another client's validator interpret unrelated manifests/configs. Native launchers run `agent-qa serve`; their workspace comes from `QA_WORKSPACE` or the inherited working directory. Use the explicit setup above when the client launches in a different directory.
@@ -51,3 +51,5 @@ Actual installed-client runs and the permissions/setup issues they exposed are d
 - [Cursor plugin reference](https://cursor.com/docs/reference/plugins)
 - [Antigravity build plugins](https://antigravity.google/docs/build-plugins)
 - Codex manifest fields were also checked against installed first-party/curated plugin manifests on the development host.
+
+The v0.1.x actual-client acceptance record is historical Python evidence; Rust v0.2.0 has separate protocol/browser tests. Upgrade the CLI and regenerate explicit executable paths when switching runtimes.

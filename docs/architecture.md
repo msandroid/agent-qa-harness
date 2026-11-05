@@ -6,7 +6,7 @@ The client owns model inference and tool authorization. This server owns a local
 flowchart LR
   H[Host frontier model and Skills] --> M[Stdio MCP]
   M --> S[SQLite job and evidence ledger]
-  M --> B[Optional Playwright adapter]
+  M --> B[Native CDP adapter]
   H --> E[Existing game mobile desktop API tools]
   E --> I[Imported artifacts and attested observations]
   I --> S
@@ -28,7 +28,7 @@ Workspace artifact imports are resolved and checked to stay inside the configure
 
 ## Browser
 
-The browser is ephemeral. Each start creates an isolated Chromium context; cookies/storage do not persist between starts. Server/database reset is external. Only listed HTTP(S) origins are allowed by request routing; WebSockets are blocked, service workers are blocked, popups are closed and downloads are not accepted. No arbitrary JS evaluator or shell execution tool is exposed.
+The browser is ephemeral. Each start creates an isolated Chromium context; cookies/storage do not persist between starts. Server/database reset is external. Only listed HTTP(S) origins are allowed by request routing; WebSockets are blocked, service workers are blocked, new popup creation is disabled and downloads are not accepted. No arbitrary JS evaluator or shell execution tool is exposed.
 
 Request routing is not a security sandbox or full browser-process network firewall. Hostile/untrusted content needs OS/network isolation. The optional driver currently does not support cross-origin popups, WebSocket applications, mobile emulation, video, tracing, file upload or full accessibility-tree observation. Use the host's existing tools when those capabilities are necessary and label external evidence.
 

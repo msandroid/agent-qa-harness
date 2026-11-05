@@ -1,0 +1,830 @@
+[
+  {
+    "name": "qa_create_job",
+    "description": "Fix build, criteria, scope, exact browser origins and budgets for this workspace.",
+    "inputSchema": {
+      "$defs": {
+        "Contract": {
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Title",
+              "type": "string"
+            },
+            "target_kind": {
+              "enum": [
+                "web",
+                "mobile",
+                "desktop",
+                "game",
+                "software"
+              ],
+              "title": "Target Kind",
+              "type": "string"
+            },
+            "build_id": {
+              "maxLength": 500,
+              "minLength": 1,
+              "title": "Build Id",
+              "type": "string"
+            },
+            "scope": {
+              "maxLength": 10000,
+              "minLength": 1,
+              "title": "Scope",
+              "type": "string"
+            },
+            "criteria": {
+              "items": {
+                "$ref": "#/$defs/Criterion"
+              },
+              "maxItems": 200,
+              "minItems": 1,
+              "title": "Criteria",
+              "type": "array"
+            },
+            "allowed_origins": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 30,
+              "title": "Allowed Origins",
+              "type": "array"
+            },
+            "max_steps": {
+              "default": 100,
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Max Steps",
+              "type": "integer"
+            },
+            "max_seconds": {
+              "default": 3600,
+              "maximum": 604800,
+              "minimum": 1,
+              "title": "Max Seconds",
+              "type": "integer"
+            },
+            "max_reported_cost_usd": {
+              "default": 10,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Max Reported Cost Usd",
+              "type": "number"
+            }
+          },
+          "required": [
+            "title",
+            "target_kind",
+            "build_id",
+            "scope",
+            "criteria"
+          ],
+          "title": "Contract",
+          "type": "object"
+        },
+        "Criterion": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "pattern": "^[a-zA-Z0-9_-]{1,64}$",
+              "title": "Id",
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 4000,
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "description"
+          ],
+          "title": "Criterion",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "contract": {
+          "$ref": "#/$defs/Contract"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "title": "qa_create_jobArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_list_jobs",
+    "description": "List jobs in this local data directory, including resumable jobs.",
+    "inputSchema": {
+      "properties": {},
+      "title": "qa_list_jobsArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "properties": {
+        "result": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Result",
+          "type": "array"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "qa_list_jobsOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "qa_get_job",
+    "description": "Read contract, checkpoint, runs, evidence and findings. Events are paginated separately.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "qa_get_jobArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "qa_get_events",
+    "description": "Read bounded action history after a cursor; max 100 events per call.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "after_seq": {
+          "default": 0,
+          "title": "After Seq",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 50,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "qa_get_eventsArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "properties": {
+        "result": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Result",
+          "type": "array"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "qa_get_eventsOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "qa_set_status",
+    "description": "Pause/resume; wall-clock deadline includes paused time and cannot be extended.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "paused"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ],
+      "title": "qa_set_statusArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_checkpoint",
+    "description": "Save explored areas, open hypotheses and next actions, including at budget exhaustion.",
+    "inputSchema": {
+      "$defs": {
+        "Checkpoint": {
+          "additionalProperties": false,
+          "properties": {
+            "summary": {
+              "maxLength": 12000,
+              "minLength": 1,
+              "title": "Summary",
+              "type": "string"
+            },
+            "explored": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 200,
+              "title": "Explored",
+              "type": "array"
+            },
+            "hypotheses": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 200,
+              "title": "Hypotheses",
+              "type": "array"
+            },
+            "next_actions": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 50,
+              "title": "Next Actions",
+              "type": "array"
+            }
+          },
+          "required": [
+            "summary"
+          ],
+          "title": "Checkpoint",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/Checkpoint"
+        }
+      },
+      "required": [
+        "job_id",
+        "checkpoint"
+      ],
+      "title": "qa_checkpointArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_begin_run",
+    "description": "Start an evidence epoch. Reset target with existing tools first; reset is operator-attested.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "discovery",
+            "reproduction",
+            "regression"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "fixture_description": {
+          "title": "Fixture Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "kind",
+        "fixture_description"
+      ],
+      "title": "qa_begin_runArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_record_step",
+    "description": "Record a game/mobile/desktop/API tool operation. Attestation, not independent execution.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "observation": {
+          "title": "Observation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "run_id",
+        "action",
+        "observation"
+      ],
+      "title": "qa_record_stepArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_reconcile_step",
+    "description": "After interruption, inspect the target and reconcile an unfinished action as unknown; no replay.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "action_id": {
+          "title": "Action Id",
+          "type": "string"
+        },
+        "observation": {
+          "title": "Observation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "action_id",
+        "observation"
+      ],
+      "title": "qa_reconcile_stepArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_attach_artifact",
+    "description": "Copy a workspace file (\u226425 MiB), hash it and bind it to this run. Inspect for secrets first.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "run_id",
+        "path",
+        "label"
+      ],
+      "title": "qa_attach_artifactArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_add_finding",
+    "description": "Create an unconfirmed candidate with criterion, expected/actual behavior and run-local evidence.",
+    "inputSchema": {
+      "$defs": {
+        "FindingInput": {
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "maxLength": 300,
+              "minLength": 1,
+              "title": "Title",
+              "type": "string"
+            },
+            "expected": {
+              "maxLength": 8000,
+              "minLength": 1,
+              "title": "Expected",
+              "type": "string"
+            },
+            "actual": {
+              "maxLength": 8000,
+              "minLength": 1,
+              "title": "Actual",
+              "type": "string"
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 200,
+              "minItems": 1,
+              "title": "Steps",
+              "type": "array"
+            },
+            "severity": {
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low"
+              ],
+              "title": "Severity",
+              "type": "string"
+            },
+            "criterion_id": {
+              "title": "Criterion Id",
+              "type": "string"
+            },
+            "artifact_ids": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 50,
+              "minItems": 1,
+              "title": "Artifact Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "title",
+            "expected",
+            "actual",
+            "steps",
+            "severity",
+            "criterion_id",
+            "artifact_ids"
+          ],
+          "title": "FindingInput",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "finding": {
+          "$ref": "#/$defs/FindingInput"
+        }
+      },
+      "required": [
+        "job_id",
+        "run_id",
+        "finding"
+      ],
+      "title": "qa_add_findingArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_record_reproduction",
+    "description": "Record one attempt per separate reproduction run. Mixed results become intermittent.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "finding_id": {
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "reproduced": {
+          "title": "Reproduced",
+          "type": "boolean"
+        },
+        "artifact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Artifact Ids",
+          "type": "array"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "finding_id",
+        "run_id",
+        "reproduced",
+        "artifact_ids",
+        "note"
+      ],
+      "title": "qa_record_reproductionArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_report_cost",
+    "description": "Add measured/reported cost. Does not read or meter your host's model subscription billing.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "usd": {
+          "title": "Usd",
+          "type": "number"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "usd",
+        "note"
+      ],
+      "title": "qa_report_costArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_complete_job",
+    "description": "Finalize with one result per criterion. pass/fail require evidence; completion is not all-pass.",
+    "inputSchema": {
+      "$defs": {
+        "Outcome": {
+          "additionalProperties": false,
+          "properties": {
+            "criterion_id": {
+              "title": "Criterion Id",
+              "type": "string"
+            },
+            "result": {
+              "enum": [
+                "pass",
+                "fail",
+                "inconclusive",
+                "not_tested"
+              ],
+              "title": "Result",
+              "type": "string"
+            },
+            "reason": {
+              "maxLength": 4000,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "artifact_ids": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 50,
+              "title": "Artifact Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "criterion_id",
+            "result",
+            "reason"
+          ],
+          "title": "Outcome",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "outcomes": {
+          "items": {
+            "$ref": "#/$defs/Outcome"
+          },
+          "title": "Outcomes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "job_id",
+        "outcomes"
+      ],
+      "title": "qa_complete_jobArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_export_report",
+    "description": "Verify artifact hashes and write JSON/Markdown reports locally. Does not publish anything.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "qa_export_reportArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_browser_start",
+    "description": "Launch isolated optional Chromium. Exact origins only, sockets blocked, no backend reset implied.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "headless": {
+          "default": true,
+          "title": "Headless",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id",
+        "run_id"
+      ],
+      "title": "qa_browser_startArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_browser_action",
+    "description": "Navigate/click/fill/press/wait/observe with before/after screenshots and bounded logs. No auto-retry.",
+    "inputSchema": {
+      "$defs": {
+        "BrowserAction": {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "navigate",
+                "click",
+                "fill",
+                "press",
+                "wait_for",
+                "observe"
+              ],
+              "title": "Kind",
+              "type": "string"
+            },
+            "url": {
+              "anyOf": [
+                {
+                  "maxLength": 4000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Url"
+            },
+            "selector": {
+              "anyOf": [
+                {
+                  "maxLength": 1000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Selector"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "maxLength": 10000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Value"
+            },
+            "timeout_ms": {
+              "default": 5000,
+              "maximum": 30000,
+              "minimum": 100,
+              "title": "Timeout Ms",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "title": "BrowserAction",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/BrowserAction"
+        }
+      },
+      "required": [
+        "job_id",
+        "run_id",
+        "action"
+      ],
+      "title": "qa_browser_actionArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "qa_browser_close",
+    "description": "Close only this harness's browser; cleanup remains available after budget exhaustion.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "qa_browser_closeArguments",
+      "type": "object"
+    }
+  }
+]
